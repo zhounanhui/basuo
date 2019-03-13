@@ -1020,7 +1020,11 @@ $axure.internal(function ($ax) {
             var map = dObj.interactionMap;
             // Attach synthetic drag and swipe events
             if(map && (map.onDragStart || map.onDrag || map.onDragDrop || map.onSwipeLeft || map.onSwipeRight || map.onSwipeUp || map.onSwipeDown)) {
-                $element.bind($ax.features.eventNames.mouseDownName, function(e) { $ax.drag.StartDragWidget(e.originalEvent, elementId); });
+                $element.bind($ax.features.eventNames.mouseDownName,
+                    function (e) {
+                        if (!e.originalEvent.donotdrag) $ax.registerTouchCount(e);
+                        $ax.drag.StartDragWidget(e.originalEvent, elementId);
+                    });
             }
 
             // Attach dynamic panel synthetic scroll event
@@ -1953,8 +1957,11 @@ $axure.internal(function ($ax) {
                 var actionName = jqueryEventNamePair[1];
 
                 if(actionName == "scrollup" || actionName == "scrolldown") return;
-                
-                $(jqueryEventNamePair[0])[actionName](function (e) {
+
+                var jObj = jqueryEventNamePair[0];
+                if ((SAFARI && IOS) || SHARE_APP) jObj = '#ios-safari-html';
+
+                $(jObj)[actionName](function (e) {
                     $ax.setjBrowserEvent(e);
                     return fireEventThroughContainers(axureName, undefined, false, [$ax.constants.PAGE_TYPE, $ax.constants.REFERENCE_DIAGRAM_OBJECT_TYPE, $ax.constants.DYNAMIC_PANEL_TYPE, $ax.constants.REPEATER],
                         [$ax.constants.PAGE_TYPE, $ax.constants.REFERENCE_DIAGRAM_OBJECT_TYPE]);

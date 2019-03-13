@@ -275,7 +275,7 @@
             var jqueryAnn = $ax.annotation.jQueryAnn(query);
             jquery = jquery.add(jqueryAnn);
         } else {
-            jquery = $('*');
+            jquery = $('*').not('#ios-safari-fixed');
             query = $ax('*');
         }
         jquery.addClass(viewId);
@@ -340,22 +340,23 @@
 
         if(!images) return undefined;
 
+        var scriptId = $ax.repeater.getScriptIdFromElementId(id);
         // first check all the images for this state
         for(var i = viewIdChain.length - 1; i >= 0; i--) {
             var viewId = viewIdChain[i];
-            var img = images[id + "~" + state + "~" + viewId];
+            var img = images[scriptId + "~" + state + "~" + viewId];
             if(!img) img = images[state + "~" + viewId];
             if(img) return img;
         }
         // check for the default state style
-        var defaultStateImage = images[id + "~" + state + "~"];
+        var defaultStateImage = images[scriptId + "~" + state + "~"];
         if(!defaultStateImage) defaultStateImage = images[state + "~"];
         if(defaultStateImage) return defaultStateImage;
 
         if(doNotProgress) return undefined;
 
         state = $ax.style.progessState(state);
-        if(state) return _matchImage(id, images, viewIdChain, state);
+        if (state) return _matchImage(scriptId, images, viewIdChain, state);
 
         // SHOULD NOT REACH HERE! NORMAL SHOULD ALWAYS CATCH AT THE DEFAULT!
         return images['normal~']; // this is the default
@@ -380,8 +381,13 @@
     };
 
     var _getAdaptiveView = function(winWidth, winHeight) {
-        var _isViewOneGreaterThanTwo = function(view1, view2) {
-            return view1.size.width > view2.size.width || (view1.size.width == view2.size.width && view1.size.height > view2.size.height);
+        var _isViewOneGreaterThanTwo = function (view1, view2, winHeight) {
+            if (view1.size.width > view2.size.width) return true;
+            if (view1.size.width == view2.size.width) {
+                if (view2.size.height <= winHeight) return view1.size.height > view2.size.height && view1.size.height <= winHeight;
+                else return view1.size.height < view2.size.height;
+            }
+            return false;
         };
 
         var _isViewOneLessThanTwo = function(view1, view2) {
@@ -413,15 +419,13 @@
         for(var i = 0; i < _enabledViews.length; i++) {
             var view = _enabledViews[i];
             if(_isWindowWidthGreaterThanViewWidth(view, winWidth, winHeight)) {
-                if(!greater || _isViewOneGreaterThanTwo(view, greater)) greater = view;
+                if(!greater || _isViewOneGreaterThanTwo(view, greater, winHeight)) greater = view;
             }
             if(_isWindowWidthLessThanViewWidth(view, winWidth, winHeight)) {
                 if(!less || _isViewOneLessThanTwo(view, less)) less = view;
             }
         }
         return greater || less;
-
-        //return less || greater;
     };
 
     var _isAdaptiveInitialized = function() {
@@ -432,7 +436,9 @@
     $ax.messageCenter.addMessageListener(function(message, data) {
         //If the adaptive plugin hasn't been initialized yet then 
         //save the view to load so that it can get set when initialize occurs
-        if(message == 'switchAdaptiveView') {
+        if (message == 'switchAdaptiveView') {
+            if (window.name != 'mainFrame') return;
+
             var href = window.location.href.split('#')[0];
             var lastSlash = href.lastIndexOf('/');
             href = href.substring(lastSlash + 1);
@@ -443,124 +449,93 @@
             if(!_isAdaptiveInitialized()) {
                 _initialViewToLoad = view;
             } else _handleLoadViewId(view);
-        } else if(message == 'setAdaptiveViewForSize') {
+        } else if (message == 'setAdaptiveViewForSize') {
+            if (window.name != 'mainFrame') return;
+
             _autoIsHandledBySidebar = true;
             if(!_isAdaptiveInitialized()) {
                 _initialViewSizeToLoad = data;
             } else _handleSetViewForSize(data.width, data.height);
-        } else if(message == 'setScale') {
-            var prevScaleN = $('#base').css('transform');
-            (prevScaleN === "none") ? prevScaleN = 1 : prevScaleN = Number(prevScaleN.substring(prevScaleN.indexOf('(') + 1, prevScaleN.indexOf(',')));
+        } else if (message == 'getScale') {
+            if (window.name != 'mainFrame') return;
+
+            var prevScaleN = data.prevScaleN;
             var newScaleN = 1;
             var contentOriginOffset = 0;
+            
+            var $body = $('body');
+            $body.css('height', '');
 
-            //1 Scale to Width
-            //2 Scale to Fit
-            $('#base').css({
-                'transform': '',
-                'transform-origin': ''
-            });
-            $('body').css('left', '');
-            $('body').css('background-size', '');
-            // IOS hack to get rid of tap highlight on blank pages
-            //if (IOS && !($('body').css('position') == 'relative')) $('body').css('width', window.screen.width + 'px');
-            //else $('body').css('width', '');
-            $('body').css('width', '');
-            $('body').css('height', '');
-            $('body').css('overflow', '');
-            $('body').css('overflow-x', '');
-
-            if(data.scale == 1 || data.scale == 2) {
-                var $body = $('body');
-                var bodyWidth = $body.width();
-                if (MOBILE_DEVICE) {
-                    bodyWidth = data.viewportWidth > 0 ? data.viewportWidth : $(document).width(); 
+            if (data.scale != 0) {
+                var adjustScrollScale = false;
+                if ($('html').getNiceScroll().length == 0 && !MOBILE_DEVICE && !SAFARI) {
+                    //adding nicescroll so width is correct when getting scale
+                    _addNiceScroll($('html'), { emulatetouch: false, horizrailenabled: false });
+                    adjustScrollScale = true;
                 }
-                var isCentered = $body.css('position') == 'relative';
-                var origin = newOrigin = isCentered ? -Number($body.css('left').replace('px', '')) + bodyWidth / 2 + 'px top' : 'left top';
-                $(window).scrollLeft(0);
-                $body.css('overflow-x', 'hidden');
+                if (!MOBILE_DEVICE && SAFARI) _removeNiceScroll($('html'));
 
+                $('html').css('overflow-x', 'hidden');
+
+                var bodyWidth = $body.width();
+                var isCentered = $body.css('position') == 'relative';
+                
                 // screen width does not adjust on screen rotation for iOS (width is always shorter screen measurement)
                 var isLandscape = window.orientation != 0 && window.orientation != 180;
                 var mobileWidth = (IOS ? (isLandscape ? window.screen.height : window.screen.width) : window.screen.width) - data.panelWidthOffset;
                 var scaleN = newScaleN = (MOBILE_DEVICE ? mobileWidth : $(window).width()) / bodyWidth;
+
                 if (data.scale == 2) {
-                    $(window).scrollTop(0);
-                    $body.css('overflow', 'hidden');
                     var pageSize = $ax.public.fn.getPageSize();
                     var hScaleN = (MOBILE_DEVICE ? data.viewportHeight : $(window).height()) / Math.max(1, pageSize.bottom);
                     if (hScaleN < scaleN) {
                         scaleN = newScaleN = hScaleN;
-                        //$body.css('height', $body.height() * scaleN + 'px');
                     }
                     if (isCentered) contentOriginOffset = scaleN * (bodyWidth / 2);
                 }
-                // Setting body height all the time instead of just when scaling to height for scale to fit, since IE won't scale properly without it
-                $body.css('height', $body.height() * scaleN + 'px');
 
-                var scale = 'scale(' + scaleN + ')';
+                if ((SAFARI && IOS) || SHARE_APP) {
+                    var pageSize = $ax.public.fn.getPageSize();
+                    $body.first().css('height', pageSize.bottom + 'px');
+                } //else $body.css('height', $body.height() + 'px');
 
-                $('#base').css({
-                    'transform': scale,
-                    'transform-origin': origin
-                });
-
-                var bodyBg = $('body').css('background-image');
-                if(bodyBg && bodyBg != 'none') {
-                    $('body').css('background-size', '');
-                    var bodyBgSize = $('body').css('background-size');
-                    var bodyBgDim = bodyBgSize.split(' ');
-                    var bodyBgWidth = Number(bodyBgDim[0].replace('px', '')) * scaleN + 'px';
-                    var bodyBgHeight = Number(bodyBgDim[1].replace('px', '')) * scaleN + 'px';
-                    $('body').css('background-size', bodyBgWidth + ' ' + bodyBgHeight);
+                if (adjustScrollScale) {
+                    _removeNiceScroll($('html'));
+                    _addNiceScroll($('html'), { emulatetouch: false, horizrailenabled: false, cursorwidth: Math.ceil(6 / newScaleN) + 'px', cursorborder: 1 / newScaleN + 'px solid #fff', cursorborderradius: 5 / newScaleN + 'px' });
                 }
-
-                if(isCentered && scaleN < 1) {
-                    var oldLeft = -Number($body.css('left').replace('px', ''));
-                    var newLeft = bodyWidth / 2 * (1 - scaleN) + oldLeft;
-                    // IOS hack to get rid of tap highlight on centered pages that are scaled
-                    if (IOS) newLeft = newLeft - 1;
-                    $body.css('left', '-' + (newLeft) + 'px');
-
-                    $body.css('width', bodyWidth * scaleN + 'px');
-                } else if (!isCentered) {
-                    // TODO: may want this back
-                    $body.css('width', bodyWidth * scaleN + 'px');
-                }
-            } else if (IOS && !($('body').css('position') == 'relative')) {
-                // IOS hack to get rid of tap highlight on blank pages
-                $('body').css('width', (window.screen.width - data.panelWidthOffset) + 'px');
             }
-
             var contentScale = {
                 scaleN: newScaleN,
                 prevScaleN: prevScaleN,
                 contentOriginOffset: contentOriginOffset,
+                clipToView: data.clipToView,
+                viewportHeight: data.viewportHeight,
+                viewportWidth: data.viewportWidth,
+                panelWidthOffset: data.panelWidthOffset,
+                scale: data.scale
             };
             $axure.messageCenter.postMessage('setContentScale', contentScale);
 
-        } else if(message == 'setDeviceMode') {
+        } else if (message == 'setDeviceMode') {
+            if (window.name != 'mainFrame') return;
+
+            _isDeviceMode = data.device;
             if (data.device) {
                 // FIXES firefox cursor not staying outside initial device frame border
                 // SAFARI needs entire content height so that trackpad can be disabled
-                if (FIREFOX || SAFARI) {
-                    var pageSize = $ax.public.fn.getPageSize();
-                    $('html').css('height', pageSize.bottom + 'px');
-                }
-
-                //if (SAFARI) _setTrackpadHorizontalScroll(false);
-
-                if ($('html').getNiceScroll().length == 0 && !MOBILE_DEVICE) {// || !$axure.player.isMobileMode())) {
-                //if ($('html').getNiceScroll().length == 0) {
-                    $('html').scrollLeft(0);
-
-                    if (!SAFARI) $('html').niceScroll({ emulatetouch: true, horizrailenabled: false });
+                //if (FIREFOX || (SAFARI && !IOS)) {
+                //    var pageSize = $ax.public.fn.getPageSize();
+                //    $('html').css('height', pageSize.bottom + 'px');
+                //}
+                
+                _removeNiceScroll($('html'));
+                if (!MOBILE_DEVICE) {
+                    _addNiceScroll($('html'), { emulatetouch: true, horizrailenabled: false });
                     $('html').addClass('mobileFrameCursor');
                     $('html').css('cursor', 'url(resources/css/images/touch.cur), auto');
                     $('html').css('cursor', 'url(resources/css/images/touch.svg) 32 32, auto');
                     $('html').css('overflow-x', 'hidden');
-                    //$('html').getNiceScroll().locked = true;
+
                     if (IE) {
                         document.addEventListener("click", function () {
                             // IE still sometimes wants an argument here
@@ -575,26 +550,47 @@
                     }
 
                     $ax.dynamicPanelManager.initMobileScroll();
-                } else {
-                    // Gives horizontal scroll to android in 100% (handled outside of iframe)
-                    $('html').css('overflow-x', 'hidden');
-                    $('body').css('margin', '0px');
-                    $(function () { _setHorizontalScroll(false); });
                 }
-            } else {
-                //if (SAFARI) _setTrackpadHorizontalScroll(true);
 
-                if (!SAFARI) $('html').getNiceScroll().remove();
+                // Gives horizontal scroll to android in 100% (handled outside of iframe)
+                $('html').css('overflow-x', 'hidden');
+                $('body').css('margin', '0px');
+                $(function () { _setHorizontalScroll(false); });
+            } else {
+                _removeNiceScroll($('html'));
                 $('html').css('overflow-x', '');
                 $('html').css('cursor', '');
-                $('html').removeAttr('style');
-                //$('html').scrollLeft(0);
+                //$('html').removeAttr('style');
                 $('body').css('margin', '');
                 $('html').removeClass('mobileFrameCursor');
                 $(function () { _setHorizontalScroll(!data.scaleToWidth); });
+
+                $ax.dynamicPanelManager.initMobileScroll();
             }
         }
     });
+
+    var _isDeviceMode = false;
+    $ax.adaptive.isDeviceMode = function () {
+        return _isDeviceMode;
+    }
+    
+    var _removeNiceScroll = $ax.adaptive.removeNiceScroll = function ($container) {
+        $container.scrollLeft(0);
+        $container.scrollTop(0);
+        $container.getNiceScroll().remove();
+        //clean up nicescroll css
+        if (IE) $container.css({ '-ms-overflow-y': '', 'overflow-y': '', '-ms-overflow-style': '', '-ms-touch-action': '' });
+    }
+
+    var _addNiceScroll = $ax.adaptive.addNiceScroll = function ($container, options) {
+        $container.scrollLeft(0);
+        $container.scrollTop(0);
+        $container.niceScroll(options);
+        //clean up nicescroll css so child scroll containers show scrollbars in IE
+        if (IE) $container.css({ '-ms-overflow-y': '', '-ms-overflow-style': '' });
+    }
+
 
     $ax.adaptive.updateMobileScrollOnBody = function () {
         var niceScroll = $('html').getNiceScroll();

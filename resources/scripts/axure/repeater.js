@@ -158,6 +158,26 @@ $axure.internal(function($ax) {
 
         var repeaterObj = $jobj(repeaterId);
         var preevalMap = {};
+
+        var shownCount = end - start;
+        var primaryCount = wrap == -1 ? shownCount : Math.min(shownCount, wrap);
+        var secondaryCount = wrap == -1 ? 1 : Math.ceil(shownCount / wrap);
+        var widthCount = vertical ? secondaryCount : primaryCount;
+        var heightCount = vertical ? primaryCount : secondaryCount;
+        var paddingTop = _getAdaptiveProp(propMap, 'paddingTop', viewId, repeaterId, obj);
+        var paddingLeft = _getAdaptiveProp(propMap, 'paddingLeft', viewId, repeaterId, obj);
+        var paddingY = paddingTop + _getAdaptiveProp(propMap, 'paddingBottom', viewId, repeaterId, obj);
+        var paddingX = paddingLeft + _getAdaptiveProp(propMap, 'paddingRight', viewId, repeaterId, obj);
+
+        var spacingX = _getAdaptiveProp(propMap, 'horizontalSpacing', viewId, repeaterId, obj);
+        var xOffset = offset.width + spacingX;
+        var spacingY = _getAdaptiveProp(propMap, 'verticalSpacing', viewId, repeaterId, obj);
+        var yOffset = offset.height + spacingY;
+        var repeaterSize = { width: paddingX, height: paddingY };
+        repeaterSize.width += offset.width + (widthCount - 1) * xOffset;
+        repeaterSize.height += offset.height + (heightCount - 1) * yOffset;
+        $ax.visibility.setResizedSize(repeaterId, repeaterSize.width, repeaterSize.height);
+
         if(itemsPregen) {
             var templateIds = [repeaterId];
             var processScriptIds = function (full, prop, id) {
@@ -180,29 +200,17 @@ $axure.internal(function($ax) {
                     preevalMap[itemId] = true;
                     jobj.removeClass('preeval');
                 }
+
+                $ax.visibility.setResizedSize(itemElementId, $ax.getNumFromPx(jobj.css('width')), $ax.getNumFromPx(jobj.css('height')));
+                $ax.visibility.setMovedLocation(itemElementId, $ax.getNumFromPx(jobj.css('left')), $ax.getNumFromPx(jobj.css('top')));
             }
         } else {
             var html = $('#' + repeaterId + '_script').html();
-            //        var container = $('<div></div>');
-            //        container.html(html);
-            //        container.attr('id', '' + repeaterId + '_container');
-            //        container.css({ position: 'absolute' });
-            //        container.offset({ left: -obj.x, top: -obj.y });
 
             var div = $('<div></div>');
             div.html(html);
             div.find('.' + $ax.visibility.HIDDEN_CLASS).removeClass($ax.visibility.HIDDEN_CLASS);
             div.find('.' + $ax.visibility.UNPLACED_CLASS).removeClass($ax.visibility.UNPLACED_CLASS);
-
-            var paddingTop = _getAdaptiveProp(propMap, 'paddingTop', viewId, repeaterId, obj);
-            var paddingLeft = _getAdaptiveProp(propMap, 'paddingLeft', viewId, repeaterId, obj);
-            var paddingY = paddingTop + _getAdaptiveProp(propMap, 'paddingBottom', viewId, repeaterId, obj);
-            var paddingX = paddingLeft + _getAdaptiveProp(propMap, 'paddingRight', viewId, repeaterId, obj);
-
-            var spacingX = _getAdaptiveProp(propMap, 'horizontalSpacing', viewId, repeaterId, obj);
-            var xOffset = offset.width + spacingX;
-            var spacingY = _getAdaptiveProp(propMap, 'verticalSpacing', viewId, repeaterId, obj);
-            var yOffset = offset.height + spacingY;
             div.css({
                 width: offset.width,
                 height: offset.height
@@ -266,6 +274,8 @@ $axure.internal(function($ax) {
                     'height': obj.height + 'px'
                 });
                 $('#' + repeaterId).append(copy);
+                $ax.visibility.setResizedSize(itemElementId, offset.width, offset.height);
+                $ax.visibility.setMovedLocation(itemElementId, left, top);
 
                 i++;
                 if(wrap != -1 && i % wrap == 0) {
@@ -280,17 +290,6 @@ $axure.internal(function($ax) {
                 else left += xOffset;
             }
 
-            var shownCount = end - start;
-            var repeaterSize = { width: paddingX, height: paddingY};
-            if(shownCount > 0) {
-                var primaryCount = wrap == -1 ? shownCount : Math.min(shownCount, wrap);
-                var secondaryCount = wrap == -1 ? 1 : Math.ceil(shownCount / wrap);
-
-                var widthCount = vertical ? secondaryCount : primaryCount;
-                var heightCount = vertical ? primaryCount : secondaryCount;
-                repeaterSize.width += offset.width + (widthCount - 1) * xOffset;
-                repeaterSize.height += offset.height + (heightCount - 1) * yOffset;
-            }
             repeaterObj.css(repeaterSize);
 
             // Had to move this here because it sets up cursor: pointer on inline links,
@@ -926,8 +925,10 @@ $axure.internal(function($ax) {
 
         // Update repeater item size
         var prop = vertical ? 'height' : 'width';
-        var itemObj = $jobj(_createElementId(repeaterId, itemId));
+        var itemElementId = _createElementId(repeaterId, itemId);
+        var itemObj = $jobj(itemElementId);
         itemObj.css(prop, $ax.getNumFromPx(itemObj.css(prop)) + delta);
+        $ax.visibility.setResizedSize(itemElementId, $ax.getNumFromPx(itemObj.css('width')), $ax.getNumFromPx(itemObj.css('height')));
 
         var repeaterObj = $jobj(repeaterId);
         var repeaterMap = repeaterSizes[repeaterId];
@@ -1056,6 +1057,7 @@ $axure.internal(function($ax) {
             var jobj = $jobj(elementId);
             var currVal = $ax.getNumFromPx(jobj.css(loc));
             jobj.css(loc, currVal + delta);
+            $ax.visibility.setMovedLocation(elementId, $ax.getNumFromPx(jobj.css('left')), $ax.getNumFromPx(jobj.css('top')));
         }
 
         if(!suppressFire) $ax.event.raiseSyntheticEvent(_createElementId(repeaterId, itemId), 'onItemResize');
@@ -1069,6 +1071,7 @@ $axure.internal(function($ax) {
         else border += $ax.getNumFromPx(jobj.css('border-left-width')) + $ax.getNumFromPx(jobj.css('border-right-width'));
         val += border;
         jobj.css(prop, val);
+        $ax.visibility.setResizedSize(jobj.attr('id'), $ax.getNumFromPx(jobj.css('width')), $ax.getNumFromPx(jobj.css('height')));
         $ax.dynamicPanelManager.fitParentPanel(jobj.attr('id'));
     }
 
@@ -1383,7 +1386,7 @@ $axure.internal(function($ax) {
         var parentPanelInfo = getParentPanel(widgetId);
         if(parentPanelInfo) {
             var parentId = parentPanelInfo.parent;
-            _updateMobileScroll(parentId, parentPanelInfo.state);
+            _updateMobileScroll(parentId, parentPanelInfo.stateId);
             if(_updateFitPanel(parentId, parentPanelInfo.state)) _fitParentPanel(parentId);
             return;
         }
@@ -1403,21 +1406,22 @@ $axure.internal(function($ax) {
     };
     _dynamicPanelManager.fitParentPanel = _fitParentPanel;
 
-    var _updateMobileScroll = function (panelId, stateIndex) {
+    var _updateMobileScroll = _dynamicPanelManager.updateMobileScroll = function (panelId, stateId) {
         if (!panelId) return false;
-
-        //check if the page is in mobile mode
-        if ($('html').getNiceScroll().length == 0) return false;
 
         // Only update scroll if panel is scrollable
         if ($ax.dynamicPanelManager.isIdFitToContent(panelId)) return false;
         var obj = $obj(panelId);
-        if (!obj || obj.scrollbars == 'None') return false;
-
-        var stateId = $ax.repeater.applySuffixToElementId(panelId, '_state' + stateIndex);
+        if (!obj || obj.scrollbars.toLowerCase() == 'none') return false;
+        
         var stateQuery = $jobj(stateId);
-
-        stateQuery.getNiceScroll().remove();
+        $ax.adaptive.removeNiceScroll(stateQuery);
+        
+        //check if the page is in mobile mode
+        if (!$ax.adaptive.isDeviceMode()) {
+            stateQuery.css('cursor', '');
+            return false;
+        }
 
         var stateContentId = stateId + '_content';
         var childrenRect = $ax('#' + stateContentId).childrenBoundingRect();
@@ -1428,27 +1432,20 @@ $axure.internal(function($ax) {
 
         // Apply niceScroll and update cursor
         if (obj.isExpo) {
-            // $('#u1_state0').niceScroll('#u2_state0', { touchemulate: true, emulatetouch: true, touchbehavior: true, railmargin: { top: 50, bottom: 50 }, bouncescroll: false, scrollbarid: "testRail" });
-
             var headerHeight = obj.headerHeight ? obj.headerHeight : 0;
             var footerHeight = obj.footerHeight ? obj.footerHeight : 0;
 
-            stateQuery.niceScroll({ touchbehavior: true, bouncescroll: false, grabcursorenabled: false, railmargin: { top: headerHeight, bottom: footerHeight }, scrollbarid: stateId + "-sb" });
+            $ax.adaptive.addNiceScroll(stateQuery, { touchbehavior: true, bouncescroll: false, grabcursorenabled: false, railmargin: { top: headerHeight, bottom: footerHeight }, scrollbarid: stateId + "-sb" });
             stateQuery.find('.nicescroll-rails').css('margin-top', headerHeight + 'px');
         } else {
-            stateQuery.niceScroll('#' + stateContentId, { emulatetouch: true });
-            //stateQuery.getNiceScroll().resize();
-            //$stateContent.css('height', '');
+            $ax.adaptive.addNiceScroll(stateQuery, { emulatetouch: true });
         }
         
         stateQuery.css('cursor', 'url(resources/css/images/touch.cur), auto');
         stateQuery.css('cursor', 'url(resources/css/images/touch.svg) 32 32, auto');
-
     }
 
     _dynamicPanelManager.initMobileScroll = function () {
-        if ($('html').getNiceScroll().length == 0) return false;
-
         var scrollable = [];
         $ax('*').each(function (obj, elementId) {
             var scriptId = $ax.repeater.getScriptIdFromElementId(elementId);
@@ -1458,7 +1455,8 @@ $axure.internal(function($ax) {
         });
         for (var i = scrollable.length - 1; i >= 0; i--) {
             var panelId = scrollable[i];
-            _updateMobileScroll(panelId, 0);
+            var stateId = $ax.repeater.applySuffixToElementId(panelId, '_state0');
+            _updateMobileScroll(panelId, stateId);
         }
     };
     
@@ -1636,10 +1634,7 @@ $axure.internal(function($ax) {
         jObj.css('width', width + 'px');
 
         $ax.visibility.setResizedSize(elementId, width, $ax('#' + elementId).height());
-        //vh: 0 for the left is not correct if fixed or not in a container
-        //should be page width minus window width over two if page is centered
-        $ax.visibility.setMovedLocation(elementId, 0, $ax('#' + elementId).offsetBoundingRect().top);
-
+        
         var panelLeft = percentPanelToLeftCache[elementId];
         var stateParent = jObj;
         while(stateParent.children()[0].id.indexOf($ax.visibility.CONTAINER_SUFFIX) != -1) stateParent = stateParent.children();
@@ -1888,6 +1883,7 @@ $axure.internal(function($ax) {
                 var stateQuery = $jobj(stateId);
                 if(stateQuery.find('#' + (targetId || widgetId)).length != 0) {
                     retVal.state = i;
+                    retVal.stateId = stateId;
                     break;
                 }
             }

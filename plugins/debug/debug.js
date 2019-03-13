@@ -144,7 +144,7 @@
         pageNotesUi += "</div>";
         pageNotesUi += "</div>";
 
-        pageNotesUi += "<div id='variablesContainer'>";
+        pageNotesUi += "<div id='variablesContainer' style='max-height:300px; overflow-y:auto'>";
         pageNotesUi += "<div id='variablesTitle' class='sectionTitle'>Variables</div>";
         pageNotesUi += "<a id='variablesClearLink' class='traceOption'>Reset Variables</a>";
         pageNotesUi += "<div id='variablesDiv'></div></div>";

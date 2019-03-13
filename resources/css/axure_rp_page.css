@@ -264,3 +264,29 @@ div.annnote {
     display: none;
     visibility: hidden;
 }
+
+#ios-safari {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#ios-safari-html {
+    display: block;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#ios-safari-fixed {
+    position: absolute;
+    pointer-events: none;
+    width: initial;
+}
+
+#ios-safari-fixed div {
+    pointer-events: auto;
+}

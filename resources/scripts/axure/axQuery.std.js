@@ -905,15 +905,19 @@ $axure.internal(function($ax) {
     var _scrollHelper = function(id, scrollX, scrollY, easing, duration) {
         var target = window.document.getElementById(id);
         var scrollable = $ax.legacy.GetScrollable(target);
-        var viewportLocation = $ax('#' + id).viewportLocation($(scrollable).attr('id'));
+        var $scrollable = $(scrollable);
+
+        var viewportLocation;
+        if ($scrollable.is('body')) viewportLocation = $ax('#' + id).viewportLocation();
+        else viewportLocation = $ax('#' + id).pageBoundingRect(true, $scrollable.attr('id')).location;
+
         var targetLeft = viewportLocation.left;
         var targetTop = viewportLocation.top;
         //var targetLeft = _getRelativeLeft(id, scrollable);
         //var targetTop = _getRelativeTop(id, scrollable);
         if(!scrollX) targetLeft = scrollable.scrollLeft;
         if(!scrollY) targetTop = scrollable.scrollTop;
-
-        var $scrollable = $(scrollable);
+        
         if($scrollable.is('body')) {
             $scrollable = $('html,body');
         }
@@ -928,10 +932,6 @@ $axure.internal(function($ax) {
             } else {
                 $scrollable.animate({ scrollTop: targetTop, scrollLeft: targetLeft }, duration, easing);
             }
-        }
-
-        if (IOS) {
-            $axure.messageCenter.postMessage('scrollToWidget', { top: targetTop, left: targetLeft, duration: duration, easing: easing });
         }
     };
 
@@ -1294,7 +1294,7 @@ $axure.internal(function($ax) {
         return _boundingRectForIds(childIds);
     };
 
-    var _fixedLocation = function (elementId, position, size) {
+    var _fixedLocation = function (elementId, size) {
         var axObj = $obj(elementId);
         if (!axObj || !axObj.fixedVertical) return { valid: false };
 
@@ -1312,7 +1312,7 @@ $axure.internal(function($ax) {
 
         var horz = axObj.fixedHorizontal;
         if(horz == 'left') {
-            newLeft = windowScrollLeft + position.left;
+            newLeft = windowScrollLeft + (axObj.percentWidth ? 0 : $ax.getNumFromPx($jobj(elementId).css('left')));
         } else if(horz == 'center') {
             newLeft = windowScrollLeft + ((windowWidth - width) / 2) + axObj.fixedMarginHorizontal;
         } else if(horz == 'right') {
@@ -1321,7 +1321,7 @@ $axure.internal(function($ax) {
 
         var vert = axObj.fixedVertical;
         if(vert == 'top') {
-            newTop = windowScrollTop + position.top;
+            newTop = windowScrollTop + $ax.getNumFromPx($jobj(elementId).css('top'));
         } else if(vert == 'middle') {
             newTop = windowScrollTop + ((windowHeight - height) / 2) + axObj.fixedMarginVertical;
         } else if(vert == 'bottom') {
@@ -1402,7 +1402,7 @@ $axure.internal(function($ax) {
             size = { width: jObj.outerWidth(), height: jObj.outerHeight() };
         }
         
-        var fixed = _fixedLocation(elementId, position, size);
+        var fixed = _fixedLocation(elementId, size);
         if(fixed.valid) {
             position.left = fixed.left;
             position.top = fixed.top;

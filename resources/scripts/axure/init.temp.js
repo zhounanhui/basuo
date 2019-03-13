@@ -118,6 +118,30 @@
         if(!isMainFrame) _processTempInit();
     });
 
+    var touchCount = 0;
+    var lastTouch = Date.now();
+    var _registerTouchCount = $ax.registerTouchCount = function (e) {
+        var now = Date.now();
+        if (now - lastTouch < 375) {
+            if (++touchCount === 3) {
+                $(':input').blur();
+                $ax.messageCenter.postMessage('tripleClick', true);
+                e.preventDefault();
+            };
+        } else {
+            touchCount = 1;
+        }
+        lastTouch = now;
+    };
+
+    // Block IOS stalling second tap.
+    // Stop third click from also clicking mobile card
+    var _clearTouchCount = $ax.clearTouchCount = function (e) {
+        if (touchCount === 3) {
+            touchCount = 0;
+            e.preventDefault();
+        }
+    };
 
     var _processTempInit = function() {
         //var start = (new Date()).getTime();
@@ -225,31 +249,8 @@
         }
 
         if($ax.features.supports.mobile) {
-            var touchCount = 0;
-            var lastTouch = Date.now();
-            $('html').on('touchstart',
-                (function (e) {
-                    var now = Date.now();
-                    if(now - lastTouch < 375) {
-                        if(++touchCount === 3) {
-                            $(':input').blur();
-                            $ax.messageCenter.postMessage('tripleClick', true);
-                            e.preventDefault();
-                        };
-                    } else {
-                        touchCount = 1;
-                    }
-                    lastTouch = now;                    
-                }));
-
-            // Block IOS stalling second tap.
-            // Stop third click from also clicking mobile card
-            $('html').on('touchend', function (e) {
-                if(touchCount === 3) {
-                    touchCount = 0;
-                    e.preventDefault();
-                }
-            });
+            $('html').first().on('touchstart', _registerTouchCount);
+            $('html').first().on('touchend', _clearTouchCount);
 
             // Stop pinch zoom (stopping all gestures for now)
             // Gesturestart is only supported in Safari

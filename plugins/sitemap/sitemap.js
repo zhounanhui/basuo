@@ -440,6 +440,12 @@ var openPreviousPage = $axure.player.openPreviousPage = function () {
         $selectedScaleOption.find('.scaleRadioButton').addClass('selectedRadioButton');
         $selectedScaleOption.find('.selectedRadioButtonFill').show();
 
+        if (scaleVal == '0') {
+            $axure.player.deleteVarFromCurrentUrlHash(SCALE_VAR_NAME);
+        } else if (typeof scaleVal !== 'undefined') {
+            $axure.player.setVarInCurrentUrlHash(SCALE_VAR_NAME, scaleVal);
+        }
+
         $axure.player.refreshViewPort();
     }
 

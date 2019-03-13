@@ -45,8 +45,8 @@ $axure.internal(function ($ax) {
         var isLandscape = IOS ? window.orientation != 0 && window.orientation != 180 : false;
         var winWidth = !IOS ? $(window).width() : (isLandscape ? window.screen.height : window.screen.width) - view.panelWidthOffset;
         var winHeight = !IOS ? $(window).height() : view.height;
-        var docLeft = !IOS ? $(document).scrollLeft() : view.scrollLeft;
-        var docTop = !IOS ? $(document).scrollTop() : view.scrollTop;
+        var docLeft = $('html').last().scrollLeft();
+        var docTop = $('html').last().scrollTop();
         var docRight = docLeft + winWidth;
         var docBottom = docTop + winHeight;
 
@@ -88,22 +88,12 @@ $axure.internal(function ($ax) {
         }
 
         // TODO: need to do something for dynamic panel with scroll
-        if (IOS) {
-            var scrollProps = {
-                doHorizontalMove: doHorizontalMove,
-                doVerticalMove: doVerticalMove,
-                newScrollLeft: newScrollLeft,
-                newScrollTop: newScrollTop
-            };
-            $axure.messageCenter.postMessage('doWidgetNoteScroll', scrollProps);
-        } else {
-            if (doHorizontalMove && doVerticalMove) {
-                $("html, body").animate({ scrollLeft: newScrollLeft, scrollTop: newScrollTop }, 300);
-            } else if (doHorizontalMove) {
-                $("html, body").animate({ scrollLeft: newScrollLeft }, 300);
-            } else if (doVerticalMove) {
-                $("html, body").animate({ scrollTop: newScrollTop }, 300);
-            }
+        if (doHorizontalMove && doVerticalMove) {
+            $("html, body").animate({ scrollLeft: newScrollLeft, scrollTop: newScrollTop }, 300);
+        } else if (doHorizontalMove) {
+            $("html, body").animate({ scrollLeft: newScrollLeft }, 300);
+        } else if (doVerticalMove) {
+            $("html, body").animate({ scrollTop: newScrollTop }, 300);
         }
     }
 

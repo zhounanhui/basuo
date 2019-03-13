@@ -1,1 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?><svg version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="10px" height="10px" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1 0 0 1 -193 -103 )"><path d="M 198 103  C 200.8 103  203 105.2  203 108  C 203 110.8  200.8 113  198 113  C 195.2 113  193 110.8  193 108  C 193 105.2  195.2 103  198 103  Z " fill-rule="nonzero" fill="#ffffff" stroke="none" /><path d="M 198 103.5  C 200.52 103.5  202.5 105.48  202.5 108  C 202.5 110.52  200.52 112.5  198 112.5  C 195.48 112.5  193.5 110.52  193.5 108  C 193.5 105.48  195.48 103.5  198 103.5  Z " stroke-width="1" stroke="#e4e4e4" fill="none" /></g></svg>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="10px" height="10px" xmlns="http://www.w3.org/2000/svg">
+  <g transform="matrix(1 0 0 1 -193 -103 )">
+    <path d="M 198 103  C 200.8 103  203 105.2  203 108  C 203 110.8  200.8 113  198 113  C 195.2 113  193 110.8  193 108  C 193 105.2  195.2 103  198 103  Z " fill-rule="nonzero" fill="#ffffff" stroke="none" />
+    <path d="M 198 103.5  C 200.52 103.5  202.5 105.48  202.5 108  C 202.5 110.52  200.52 112.5  198 112.5  C 195.48 112.5  193.5 110.52  193.5 108  C 193.5 105.48  195.48 103.5  198 103.5  Z " stroke-width="1" stroke="#e4e4e4" fill="none" />
+  </g>
+</svg>

@@ -8,10 +8,13 @@ var CHROME = false;
 var SAFARI = false;
 var FIREFOX = false;
 var WEBKIT = false;
+var QQ = false;
+var UC = false;
 var OS_MAC = false;
 var IOS = false;
 var ANDROID = false;
 var MOBILE_DEVICE = false;
+var SHARE_APP = false;
 
 var IE = false;
 var IE_10_AND_BELOW = false;  //ie 10 and lower
@@ -58,6 +61,11 @@ var BROWSER_VERSION = 5000;
     var firefoxMatch = firefoxRegex.exec(useragent);
     FIREFOX = useragent.toLowerCase().indexOf('firefox') > -1;
     if (FIREFOX) BROWSER_VERSION = Number(firefoxMatch[1]);
+
+    QQ = useragent.toLowerCase().indexOf('qqbrowser') > -1;
+    UC = useragent.toLowerCase().indexOf('ucbrowser') > -1 || useragent.toLowerCase().indexOf('ubrowser') > -1;
+
+    SHARE_APP = useragent.toLowerCase().indexOf('shareapp') > -1;
 
     var macRegex = /Mac/g ;
     OS_MAC = Boolean(macRegex.exec(window.navigator.platform));

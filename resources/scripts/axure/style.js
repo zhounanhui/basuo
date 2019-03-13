@@ -197,8 +197,9 @@
             for(var i = 0; i < viewChain.length; i++) {
                 var viewId = viewChain[i];
                 // Need to check seperately for images.
+                var scriptId = $ax.repeater.getScriptIdFromElementId(id);
                 if(obj.adaptiveStyles && obj.adaptiveStyles[viewId] && any(obj.adaptiveStyles[viewId])
-                    || obj.images && (obj.images[id + '~selected~' + viewId] || obj.images['selected~' + viewId])) return isSelectedFocused(SELECTED);
+                    || obj.images && (obj.images[scriptId + '~selected~' + viewId] || obj.images['selected~' + viewId])) return isSelectedFocused(SELECTED);
             }
             var selectedStyle = obj.style && obj.style.stateStyles && obj.style.stateStyles.selected;
             if(selectedStyle && any(selectedStyle)) return isSelectedFocused(SELECTED);

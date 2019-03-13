@@ -255,13 +255,13 @@ ul.sitemapTree {
 .adaptiveViewOption, .vpPresetOption, .vpScaleOption {
     padding: 3px 0px 3px 0px;
     color: #3B3B3B;
-    white-space: nowrap;
+    display: flex;
 }
 
 .projectOptionsScaleRow, .projectOptionsAdaptiveViewRow, .projectOptionsHotspotsRow {
     border-top: solid 1px #c7c7c7;
-    line-height: 42px;
-    white-space: nowrap;
+    display: flex;
+    padding: 13px 7px 13px 0px;
 }
 
 .adaptiveViewOption:hover, .vpScaleOption:hover, .vpPresetOption:hover, .projectOptionsAdaptiveViewRow:hover, .projectOptionsScaleRow:hover
@@ -278,15 +278,18 @@ ul.sitemapTree {
     border-radius: 48px;
     margin-right: 12px;
     top: 2px;
+    flex-shrink: 0;
 }
-    .mobileMode .scaleRadioButton, .mobileMode .adapViewRadioButton {
-        width: 20px;
-        height: 20px;
-        border-radius: 60px;
-        margin-right: 22px;
-        margin-left: 22px;
-        top: 7px;
-    }
+
+.mobileMode .scaleRadioButton, .mobileMode .adapViewRadioButton {
+    width: 20px;
+    height: 20px;
+    border-radius: 60px;
+    margin-right: 22px;
+    margin-left: 22px;
+    top: 0px;
+    flex-shrink: 0;
+}
 
 .selectedRadioButton {
     border: solid 1px #20aca9;
